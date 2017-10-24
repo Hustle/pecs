@@ -6,6 +6,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "bin": {
+    "pecs": "src/pecs.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/HustleInc/pecs.git"
@@ -25,6 +28,8 @@
   "dependencies": {
     "aws-sdk": "^2.140.0",
     "commander": "^2.11.0",
-    "dockerode": "^2.5.3"
+    "dockerode": "^2.5.3",
+    "lodash": "^4.17.4",
+    "winston": "^2.4.0"
   }
 }
