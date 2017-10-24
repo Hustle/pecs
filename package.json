@@ -1,0 +1,30 @@
+{
+  "name": "pecs",
+  "version": "1.0.0",
+  "description": "Flex your ECS muscles",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HustleInc/pecs.git"
+  },
+  "keywords": [
+    "AWS",
+    "ECS",
+    "deployment",
+    "docker"
+  ],
+  "author": "Tyler Brock, Noah Silas",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/HustleInc/pecs/issues"
+  },
+  "homepage": "https://github.com/HustleInc/pecs#readme",
+  "dependencies": {
+    "aws-sdk": "^2.140.0",
+    "commander": "^2.11.0",
+    "dockerode": "^2.5.3"
+  }
+}
