@@ -7,20 +7,25 @@ logger.cli();
 
 const TAG_SEP = ':';
 
+/**
+ * Updates services on ECS to use a new docker image.
+ *
+ * If multiple services in a cluster depend on the same image, this tool
+ * can be used to update all of them simultaneously.
+ */
 program
+  .description('Update service(s) on ECS with a new docker image')
   .arguments('<services...>', 'Service(s) to deploy with this image')
   .option('-c --cluster <cluster>', 'Cluster to release on (defaults to "default" cluster)', 'default')
   .option('-t --tag <tag>', 'Tag to release (defaults to ":latest")', 'latest')
   .option('-r --region <region>', 'Region for cluster (defaults to "us-east-1"', 'us-east-1')
   .action((services, env) => {
-    const { cluster } = env;
-    if (!services.length) {
-      throw new Error('No services specified');
-    }
-    logger.info('releasing', { services, tag: env.tag });
+    const { cluster, region, tag } = env;
+    logger.info('releasing', { services, tag });
 
-    AWS.config.update({ region: env.region });
+    AWS.config.update({ region });
     const ecs = new AWS.ECS({ apiVersion: '2014-11-13' });
+
     ecs.describeServices({ cluster, services }).promise()
       .then((result) => {
         // Get the current task definition for each service
@@ -31,7 +36,7 @@ program
         return Promise.all(getDefPromises);
       })
       .then((taskDefs) => {
-        // Update each task definition to use the specified image
+        // Update each task definition to use the specified image with provided tag
         const newTaskDefs = taskDefs.map((def) => {
           const newDef = _.pick(def.taskDefinition, ['containerDefinitions', 'volumes', 'family']);
 
@@ -39,7 +44,7 @@ program
           const containerDefs = newDef.containerDefinitions;
           const container = containerDefs[0];
           const namespace = container.image.split(TAG_SEP)[0];
-          container.image = `${namespace}${TAG_SEP}${env.tag}`;
+          container.image = `${namespace}${TAG_SEP}${tag}`;
           return newDef;
         });
 
