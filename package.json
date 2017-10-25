@@ -29,7 +29,6 @@
   "dependencies": {
     "aws-sdk": "^2.140.0",
     "commander": "^2.11.0",
-    "dockerode": "^2.5.3",
     "lodash": "^4.17.4",
     "winston": "^2.4.0"
   },
