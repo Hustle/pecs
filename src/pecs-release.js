@@ -13,12 +13,10 @@ program
   .option('-t --tag <tag>', 'Tag to release (defaults to ":latest")', 'latest')
   .option('-r --region <region>', 'Region for cluster (defaults to "us-east-1"', 'us-east-1')
   .action((services, env) => {
-    const cluster = env.cluster;
-    console.log('Running Release');
+    const { cluster } = env;
     if (!services.length) {
       throw new Error('No services specified');
     }
-    let newDefs;
     logger.info('releasing', { services, tag: env.tag });
 
     AWS.config.update({ region: env.region });
@@ -58,7 +56,7 @@ program
       });
 
       return Promise.all(updateServicePromises);
-    }).then((results) => {
+    }).then(() => {
       logger.info('waiting for services to stabilize...');
       return ecs.waitFor('servicesStable', { cluster, services }).promise();
     });

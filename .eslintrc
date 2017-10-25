@@ -1,3 +1,8 @@
 {
-    "extends": "airbnb"
+    "extends": "airbnb",
+    "rules": {
+      "arrow-body-style": 0,
+      "newline-per-chained-call": 0,
+      "comma-dangle": 0,
+    }
 }
