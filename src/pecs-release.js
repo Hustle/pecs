@@ -51,7 +51,7 @@ program
         return ecs.updateService({
           cluster: env.cluster,
           service: services[index],
-          taskDefinition: taskDefArn
+          taskDefinition: taskDefArn,
         }).promise();
       });
 
