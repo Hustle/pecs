@@ -31,9 +31,9 @@ Yargs
     (yargs) => {
       yargs
         .group(['cluster', 'services', 'tag'], 'Common args:')
-        .example('$0 release -c dev api', 'update dev api service')
-        .example('$0 release -c dev api worker', 'update dev api + worker services')
-        .example('$0 release -c dev -t v1.2.3 api', 'update dev api to v1.2.3')
+        .example('$0 release -c dev -s api', 'update dev api service')
+        .example('$0 release -c dev -s api worker', 'update dev api + worker services')
+        .example('$0 release -c dev -s api -t v1.2.3', 'update dev api to v1.2.3')
         .option('t', {
           alias: 'tag',
           default: 'latest',
@@ -46,9 +46,9 @@ Yargs
     (yargs) => {
       yargs
         .group(['cluster', 'services', 'rev'], 'Common args:')
-        .example('$0 rollback api', 'roll back api to previous task def')
-        .example('$0 rollback api worker', 'roll back api + worker')
-        .example('$0 rollback --rev -2 api', 'roll back api 2 release ago')
+        .example('$0 rollback -c dev -s api', 'roll back api to previous task def')
+        .example('$0 rollback -c dev -s api worker', 'roll back api + worker')
+        .example('$0 rollback -c dev -s api --rev -2', 'roll back api 2 release ago')
         .option('rev', {
           type: 'number',
           default: '-1',

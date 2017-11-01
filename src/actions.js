@@ -14,6 +14,12 @@ async function getServices(ecs, cluster, services) {
   return services;
 }
 
+// Returns a configured ECS client
+function getECS(region) {
+  AWS.config.update({ region });
+  return new AWS.ECS({ apiVersion: '2014-11-13' });
+}
+
 // Updates task definition to specify image with provided tag
 function makeUpdatedDef(def, imageTag) {
   // Keep only the important bits -- the api complains if we don't
@@ -31,6 +37,28 @@ function makeUpdatedDef(def, imageTag) {
   return newDef;
 }
 
+// Updates services on a cluster to run new arns
+async function updateServices(ecs, cluster, services, arns) {
+  // Instruct services to use the new task definitions
+  const updateServicePromises = arns.map((taskDefArn, index) => {
+    const service = services[index];
+    logger.info(`updating ${cluster}:${service} with ARN ${taskDefArn}`);
+    return ecs.updateService({
+      cluster,
+      service,
+      taskDefinition: taskDefArn,
+    }).promise();
+  });
+
+  // Update services
+  await Promise.all(updateServicePromises);
+  logger.info('waiting for services to stabilize...');
+
+  // Wait for rollout
+  await ecs.waitFor('servicesStable', { cluster, services }).promise();
+  logger.info('successfully released');
+}
+
 // Deploys a service or set of services by running a new image
 async function deploy(args) {
   const {
@@ -41,9 +69,7 @@ async function deploy(args) {
   } = args;
 
   logger.info('requested release', { cluster, services, tag });
-
-  AWS.config.update({ region });
-  const ecs = new AWS.ECS({ apiVersion: '2014-11-13' });
+  const ecs = getECS(region);
 
   const serviceNames = await getServices(ecs, cluster, services);
   logger.info('targeting services', services);
@@ -64,25 +90,55 @@ async function deploy(args) {
   });
   const registeredDefs = await Promise.all(registerDefPromises);
 
-  // Instruct services to use the new task definitions
-  const updateServicePromises = registeredDefs.map((def, index) => {
-    const taskDefArn = def.taskDefinition.taskDefinitionArn;
-    return ecs.updateService({
-      cluster,
-      service: services[index],
-      taskDefinition: taskDefArn,
-    }).promise();
+  const newArns = registeredDefs.map(def => def.taskDefinition.taskDefinitionArn);
+  updateServices(ecs, cluster, services, newArns);
+}
+
+async function rollback(args) {
+  const {
+    region,
+    cluster,
+    services,
+    rev,
+  } = args;
+
+  logger.info('requested rollback', { cluster, services, rev });
+  const ecs = getECS(region);
+
+  const serviceNames = await getServices(ecs, cluster, services);
+  logger.info('targeting services', services);
+  const descriptions = await ecs.describeServices({ cluster, services: serviceNames }).promise();
+
+  // Get the current task definition for each service
+  const getDefPromises = descriptions.services.map((service) => {
+    const { taskDefinition } = service;
+    logger.debug('current task def', { taskDefinition });
+    return ecs.describeTaskDefinition({ taskDefinition }).promise();
+  });
+  const taskDefs = await Promise.all(getDefPromises);
+
+  const previousDefArns = taskDefs.map((def) => {
+    const taskDef = def.taskDefinition;
+    const { family } = taskDef;
+    const relativeRev = (rev || -1);
+
+    if (relativeRev >= 0) {
+      throw new Error('Relative revision must be a negative number');
+    }
+
+    const taskDefBase = taskDef.taskDefinitionArn.split(`/${family}:`)[0];
+    const taskDefRev = taskDef.revision + relativeRev;
+    const previousArn = `${taskDefBase}/${family}:${taskDefRev}`;
+    return previousArn;
   });
 
-  // Update services
-  await Promise.all(updateServicePromises);
-  logger.info('waiting for services to stabilize...');
+  // TODO: ensure that all of the previous task definition revisions use
+  // the same docker image
 
-  // Wait for rollout
-  await ecs.waitFor('servicesStable', { cluster, services }).promise();
-  logger.info('successfully released');
+  updateServices(ecs, cluster, services, previousDefArns);
 }
 
 module.exports = {
   deploy,
+  rollback,
 };
