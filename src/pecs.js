@@ -1,13 +1,75 @@
 #!/usr/bin/env node
-const program = require('commander');
-const winston = require('winston');
-const { version } = require('../package.json');
+const Yargs = require('yargs');
+const logger = require('winston');
+const { deploy, rollback } = require('./actions');
 
-winston.cli();
+logger.level = process.env.LOG_LEVEL || 'info';
+logger.cli();
 
-program
-  .version(version)
-  .command('pecs')
-  .command('release', 'release an image')
-  // .command('rollback <relative_releases_ago>', 'rollback to a previous release')
-  .parse(process.argv);
+
+// Wraps an action so that we can handle errors, etc...
+function wrap(fn) {
+  return function wrapper(params) {
+    fn(params).catch((error) => { logger.error(error); });
+  };
+}
+
+/**
+ * Updates services on ECS to use a new docker image.
+ *
+ * If multiple services in a cluster depend on the same image, this tool
+ * can be used to update all of them simultaneously.
+ */
+
+// eslint-disable-next-line no-unused-expressions
+Yargs
+  .usage('$0 <command>')
+  .required(1, 'Pecs requires a command!')
+  .pkgConf('ecs')
+  .command(
+    'release', 'Update service(s) with new image',
+    (yargs) => {
+      yargs
+        .group(['cluster', 'services', 'tag'], 'Common args:')
+        .example('$0 release -c dev api', 'update dev api service')
+        .example('$0 release -c dev api worker', 'update dev api + worker services')
+        .example('$0 release -c dev -t v1.2.3 api', 'update dev api to v1.2.3')
+        .option('t', {
+          alias: 'tag',
+          default: 'latest',
+          describe: 'Image tag that should be released',
+        });
+    }, wrap(deploy),
+  )
+  .command(
+    'rollback', 'Roll back service(s)',
+    (yargs) => {
+      yargs
+        .group(['cluster', 'services', 'rev'], 'Common args:')
+        .example('$0 rollback api', 'roll back api to previous task def')
+        .example('$0 rollback api worker', 'roll back api + worker')
+        .example('$0 rollback --rev -2 api', 'roll back api 2 release ago')
+        .option('rev', {
+          type: 'number',
+          default: '-1',
+          describe: 'Desired relative revision to release',
+        });
+    }, wrap(rollback),
+  )
+  .option('c', {
+    alias: 'cluster',
+    default: 'default',
+    describe: 'Cluster to modify',
+  })
+  .option('s', {
+    alias: 'services',
+    type: 'array',
+    default: [],
+    describe: 'Services that should be modified',
+  })
+  .option('r', {
+    alias: 'region',
+    default: 'us-east-1',
+    describe: 'Region for ECS cluster',
+  })
+  .argv;

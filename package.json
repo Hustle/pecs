@@ -28,9 +28,10 @@
   "homepage": "https://github.com/HustleInc/pecs#readme",
   "dependencies": {
     "aws-sdk": "^2.140.0",
-    "commander": "^2.11.0",
+    "cosmiconfig": "^3.1.0",
     "lodash": "^4.17.4",
-    "winston": "^2.4.0"
+    "winston": "^2.4.0",
+    "yargs": "^10.0.3"
   },
   "devDependencies": {
     "eslint": "^4.9.0",
