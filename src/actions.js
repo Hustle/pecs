@@ -4,20 +4,35 @@ const logger = require('winston');
 
 const TAG_SEP = ':';
 
-function getServices(ecs, cluster, services) {
+// Fetches list of all service names if none are provided
+async function getServices(ecs, cluster, services) {
   if (!services.length) {
-    return ecs.listServices({ cluster, maxResults: 10 })
-      .promise()
-      .then((result) => {
-        const serviceNames = result.serviceArns.map(s => s.split('/')[1]);
-        services.push(...serviceNames);
-        return (services);
-      });
+    const list = await ecs.listServices({ cluster, maxResults: 10 }).promise();
+    const serviceNames = list.serviceArns.map(s => s.split('/')[1]);
+    services.push(...serviceNames);
   }
-  return Promise.resolve(services);
+  return services;
 }
 
-function deploy(args) {
+// Updates task definition to specify image with provided tag
+function makeUpdatedDef(def, imageTag) {
+  // Keep only the important bits -- the api complains if we don't
+  const newDef = _.pick(def.taskDefinition, [
+    'containerDefinitions',
+    'volumes',
+    'family',
+  ]);
+
+  // Only support one container per def for now
+  const containerDefs = newDef.containerDefinitions;
+  const container = containerDefs[0];
+  const namespace = container.image.split(TAG_SEP)[0];
+  container.image = `${namespace}${TAG_SEP}${imageTag}`;
+  return newDef;
+}
+
+// Deploys a service or set of services by running a new image
+async function deploy(args) {
   const {
     region,
     cluster,
@@ -30,62 +45,42 @@ function deploy(args) {
   AWS.config.update({ region });
   const ecs = new AWS.ECS({ apiVersion: '2014-11-13' });
 
-  return getServices(ecs, cluster, services)
-    .then(() => {
-      logger.info('targeting services', services);
-      return ecs.describeServices({ cluster, services }).promise();
-    })
-    .then((result) => {
-      // Get the current task definition for each service
-      const getDefPromises = result.services.map((service) => {
-        const { taskDefinition } = service;
-        logger.debug('current task def', { taskDefinition });
-        return ecs.describeTaskDefinition({ taskDefinition }).promise();
-      });
+  const serviceNames = await getServices(ecs, cluster, services);
+  logger.info('targeting services', services);
+  const descriptions = await ecs.describeServices({ cluster, services: serviceNames }).promise();
 
-      return Promise.all(getDefPromises);
-    })
-    .then((taskDefs) => {
-      // Update each task definition to use the specified image with provided tag
-      const newTaskDefs = taskDefs.map((def) => {
-        const newDef = _.pick(def.taskDefinition, [
-          'containerDefinitions',
-          'volumes',
-          'family',
-        ]);
+  // Get the current task definition for each service
+  const getDefPromises = descriptions.services.map((service) => {
+    const { taskDefinition } = service;
+    logger.debug('current task def', { taskDefinition });
+    return ecs.describeTaskDefinition({ taskDefinition }).promise();
+  });
+  const taskDefs = await Promise.all(getDefPromises);
 
-        // Only support one container per def for now
-        const containerDefs = newDef.containerDefinitions;
-        const container = containerDefs[0];
-        const namespace = container.image.split(TAG_SEP)[0];
-        container.image = `${namespace}${TAG_SEP}${tag}`;
-        return newDef;
-      });
+  // Make and register new definitions
+  const newTaskDefs = taskDefs.map(def => makeUpdatedDef(def, tag));
+  const registerDefPromises = newTaskDefs.map((def) => {
+    return ecs.registerTaskDefinition(def).promise();
+  });
+  const registeredDefs = await Promise.all(registerDefPromises);
 
-      const registerDefPromises = newTaskDefs.map((def) => {
-        return ecs.registerTaskDefinition(def).promise();
-      });
-      return Promise.all(registerDefPromises);
-    })
-    .then((registeredDefs) => {
-      const updateServicePromises = registeredDefs.map((def, index) => {
-        const taskDefArn = def.taskDefinition.taskDefinitionArn;
-        return ecs.updateService({
-          cluster,
-          service: services[index],
-          taskDefinition: taskDefArn,
-        }).promise();
-      });
+  // Instruct services to use the new task definitions
+  const updateServicePromises = registeredDefs.map((def, index) => {
+    const taskDefArn = def.taskDefinition.taskDefinitionArn;
+    return ecs.updateService({
+      cluster,
+      service: services[index],
+      taskDefinition: taskDefArn,
+    }).promise();
+  });
 
-      return Promise.all(updateServicePromises);
-    })
-    .then(() => {
-      logger.info('waiting for services to stabilize...');
-      return ecs.waitFor('servicesStable', { cluster, services }).promise();
-    })
-    .then(() => {
-      logger.info('successfully released');
-    });
+  // Update services
+  await Promise.all(updateServicePromises);
+  logger.info('waiting for services to stabilize...');
+
+  // Wait for rollout
+  await ecs.waitFor('servicesStable', { cluster, services }).promise();
+  logger.info('successfully released');
 }
 
 module.exports = {
