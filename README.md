@@ -4,6 +4,8 @@ PECS: Flex your ECS muscles
 PECS allows you to easily deploy your docker projects to Amazon AWS's ECS
 platform.
 
+Requires Node 8+
+
 ### Installation ###
 
 ```sh
@@ -21,7 +23,7 @@ Commands:
 ```
 
 #### Release ####
-```sh
+```
 pecs release
 
 Update service(s) with new image
@@ -44,7 +46,7 @@ Examples:
 
 #### Rollback ####
 
-```sh
+```
 pecs rollback
 
 Roll back service(s)
