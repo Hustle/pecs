@@ -4,6 +4,10 @@ PECS: Flex your ECS muscles
 PECS allows you to easily deploy your docker projects to Amazon AWS's ECS
 platform.
 
+Currently requires that AWS is configured via the environment:
+  - `AWS_ACCESS_KEY_ID` must be set
+  - `AWS_SECRET_ACCESS_KEY` must be set
+
 Requires Node 8+
 
 ### Installation ###
