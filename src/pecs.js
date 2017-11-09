@@ -26,36 +26,31 @@ Yargs
   .usage('$0 <command>')
   .required(1, 'Pecs requires a command!')
   .pkgConf('ecs')
-  .command(
-    'release', 'Update service(s) with new image',
-    (yargs) => {
-      yargs
-        .group(['cluster', 'services', 'tag'], 'Common args:')
-        .example('$0 release -c dev -s api', 'update dev api service')
-        .example('$0 release -c dev -s api worker', 'update dev api + worker services')
-        .example('$0 release -c dev -s api -t v1.2.3', 'update dev api to v1.2.3')
-        .option('t', {
-          alias: 'tag',
-          default: 'latest',
-          describe: 'Image tag that should be released',
-        });
+  .command('release', 'Update service(s) with new image', (yargs) => {
+    yargs
+      .group(['cluster', 'services', 'tag'], 'Common args:')
+      .example('$0 release -c dev -s api', 'update dev api service')
+      .example('$0 release -c dev -s api worker', 'update dev api + worker services')
+      .example('$0 release -c dev -s api -t v1.2.3', 'update dev api to v1.2.3')
+      .option('t', {
+        alias: 'tag',
+        default: 'latest',
+        describe: 'Image tag that should be released',
+      });
     }, wrap(deploy),
   )
-  .command(
-    'rollback', 'Roll back service(s)',
-    (yargs) => {
-      yargs
-        .group(['cluster', 'services', 'rev'], 'Common args:')
-        .example('$0 rollback -c dev -s api', 'roll back api to previous task def')
-        .example('$0 rollback -c dev -s api worker', 'roll back api + worker')
-        .example('$0 rollback -c dev -s api --rev -2', 'roll back api 2 release ago')
-        .option('rev', {
-          type: 'number',
-          default: '-1',
-          describe: 'Desired relative revision to release',
-        });
-    }, wrap(rollback),
-  )
+  .command('rollback', 'Roll back service(s)', (yargs) => {
+    yargs
+      .group(['cluster', 'services', 'rev'], 'Common args:')
+      .example('$0 rollback -c dev -s api', 'roll back api to previous task def')
+      .example('$0 rollback -c dev -s api worker', 'roll back api + worker')
+      .example('$0 rollback -c dev -s api --rev -2', 'roll back api 2 release ago')
+      .option('rev', {
+        type: 'number',
+        default: '-1',
+        describe: 'Desired relative revision to release',
+      });
+  }, wrap(rollback))
   .option('c', {
     alias: 'cluster',
     default: 'default',
