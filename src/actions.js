@@ -1,6 +1,7 @@
 const _ = require('lodash');
 const AWS = require('aws-sdk');
 const logger = require('winston');
+const prettyjson = require('prettyjson');
 
 const TAG_SEP = ':';
 
@@ -14,6 +15,16 @@ async function getServices(ecs, cluster, services) {
   return services;
 }
 
+// Get the current task definition for each service
+async function getTaskDefs(ecs, cluster, descriptions) {
+  const getDefPromises = descriptions.services.map((service) => {
+    const { taskDefinition } = service;
+    logger.debug('current task def', { taskDefinition });
+    return ecs.describeTaskDefinition({ taskDefinition }).promise();
+  });
+  return Promise.all(getDefPromises);
+}
+
 // Returns a configured ECS client
 function getECS(region) {
   AWS.config.update({ region });
@@ -21,7 +32,7 @@ function getECS(region) {
 }
 
 // Updates task definition to specify image with provided tag
-function makeUpdatedDef(def, imageTag) {
+function makeUpdatedDef(def, imageTag, env) {
   // Keep only the important bits -- the api complains if we don't
   const newDef = _.pick(def.taskDefinition, [
     'containerDefinitions',
@@ -29,12 +40,30 @@ function makeUpdatedDef(def, imageTag) {
     'family',
   ]);
 
-  // Only support one container per def for now
-  const containerDefs = newDef.containerDefinitions;
-  const container = containerDefs[0];
-  const namespace = container.image.split(TAG_SEP)[0];
-  container.image = `${namespace}${TAG_SEP}${imageTag}`;
+  if (imageTag) {
+    // Only support one container per def for now
+    const containerDefs = newDef.containerDefinitions;
+    const container = containerDefs[0];
+    const namespace = container.image.split(TAG_SEP)[0];
+    container.image = `${namespace}${TAG_SEP}${imageTag}`;
+  }
+
+  if (env) {
+    const containerDefs = newDef.containerDefinitions;
+    const container = containerDefs[0];
+    container.environment = env;
+  }
+
   return newDef;
+}
+
+
+// Registers an array of task definitions
+async function registerDefs(ecs, newTaskDefs) {
+  const registerDefPromises = newTaskDefs.map((def) => {
+    return ecs.registerTaskDefinition(def).promise();
+  });
+  return Promise.all(registerDefPromises);
 }
 
 // Updates services on a cluster to run new arns
@@ -56,7 +85,7 @@ async function updateServices(ecs, cluster, services, arns) {
 
   // Wait for rollout
   await ecs.waitFor('servicesStable', { cluster, services }).promise();
-  logger.info('successfully released');
+  logger.info('successfully updated the services');
 }
 
 // Deploys a service or set of services by running a new image
@@ -85,15 +114,13 @@ async function deploy(args) {
 
   // Make and register new definitions
   const newTaskDefs = taskDefs.map(def => makeUpdatedDef(def, tag));
-  const registerDefPromises = newTaskDefs.map((def) => {
-    return ecs.registerTaskDefinition(def).promise();
-  });
-  const registeredDefs = await Promise.all(registerDefPromises);
+  const registeredDefs = await registerDefs(ecs, newTaskDefs);
 
   const newArns = registeredDefs.map(def => def.taskDefinition.taskDefinitionArn);
-  updateServices(ecs, cluster, services, newArns);
+  return updateServices(ecs, cluster, services, newArns);
 }
 
+// Rolls a services back to the previous task definitions
 async function rollback(args) {
   const {
     region,
@@ -108,14 +135,7 @@ async function rollback(args) {
   const serviceNames = await getServices(ecs, cluster, services);
   logger.info('targeting services', services);
   const descriptions = await ecs.describeServices({ cluster, services: serviceNames }).promise();
-
-  // Get the current task definition for each service
-  const getDefPromises = descriptions.services.map((service) => {
-    const { taskDefinition } = service;
-    logger.debug('current task def', { taskDefinition });
-    return ecs.describeTaskDefinition({ taskDefinition }).promise();
-  });
-  const taskDefs = await Promise.all(getDefPromises);
+  const taskDefs = await getTaskDefs(ecs, cluster, descriptions);
 
   const previousDefArns = taskDefs.map((def) => {
     const taskDef = def.taskDefinition;
@@ -135,10 +155,88 @@ async function rollback(args) {
   // TODO: ensure that all of the previous task definition revisions use
   // the same docker image
 
-  updateServices(ecs, cluster, services, previousDefArns);
+  return updateServices(ecs, cluster, services, previousDefArns);
+}
+
+async function configure(args) {
+  const {
+    region,
+    cluster,
+    services,
+  } = args;
+
+  const ecs = getECS(region);
+  const numArgs = args._.length;
+  const serviceNames = await getServices(ecs, cluster, services);
+  const descriptions = await ecs.describeServices({ cluster, services: serviceNames }).promise();
+  const taskDefs = await getTaskDefs(ecs, cluster, descriptions);
+
+  if (numArgs === 1) {
+    const defEnvs = taskDefs.map((def) => {
+      const containerDef = def.taskDefinition.containerDefinitions[0];
+      const familyName = def.taskDefinition.family;
+      return {
+        name: familyName,
+        container: containerDef.name,
+        env: containerDef.environment.reduce((env, x) => {
+          // eslint-disable-next-line no-param-reassign
+          env[x.name] = x.value;
+          return env;
+        }, {}),
+      };
+    });
+    defEnvs.forEach((defEnv) => {
+      if (defEnvs.length !== 1) {
+        // eslint-disable-next-line no-console
+        console.log(`[TaskDef Family: ${defEnv.name} :: Container: ${defEnv.container}]`);
+      }
+      // eslint-disable-next-line no-console
+      console.log(prettyjson.render(defEnv.env), '\n');
+    });
+  } else if (numArgs > 1) {
+    const subCommand = args._[1];
+    if (subCommand === 'get') {
+      const { key } = args;
+      logger.info(`fetching ${key}`, { cluster, services });
+      const env = taskDefs[0].taskDefinition.containerDefinitions[0].environment;
+      const envVar = env.find(x => x.name === key);
+      if (envVar) {
+        // eslint-disable-next-line no-console
+        console.log(envVar.value);
+      }
+    }
+    if (subCommand === 'set') {
+      const { key, val } = args;
+      logger.info(`setting ${key}=${val}`, { cluster, services });
+      const newTaskDefs = taskDefs.map((def) => {
+        const env = def.taskDefinition.containerDefinitions[0].environment;
+        env.push({ name: key, value: val });
+        return makeUpdatedDef(def, null, env);
+      });
+      const registeredDefs = await registerDefs(ecs, newTaskDefs);
+
+      const newArns = registeredDefs.map(def => def.taskDefinition.taskDefinitionArn);
+      await updateServices(ecs, cluster, services, newArns);
+    }
+    if (subCommand === 'unset') {
+      const { key } = args;
+      logger.info(`unsetting ${key}`, { cluster, services });
+
+      const newTaskDefs = taskDefs.map((def) => {
+        const oldEnv = def.taskDefinition.containerDefinitions[0].environment;
+        const newEnv = oldEnv.filter(envVar => envVar.name !== key);
+        return makeUpdatedDef(def, null, newEnv);
+      });
+      const registeredDefs = await registerDefs(ecs, newTaskDefs);
+
+      const newArns = registeredDefs.map(def => def.taskDefinition.taskDefinitionArn);
+      await updateServices(ecs, cluster, services, newArns);
+    }
+  }
 }
 
 module.exports = {
   deploy,
   rollback,
+  configure,
 };

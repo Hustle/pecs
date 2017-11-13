@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 const Yargs = require('yargs');
 const logger = require('winston');
-const { deploy, rollback } = require('./actions');
+const { deploy, rollback, configure } = require('./actions');
 
 logger.level = process.env.LOG_LEVEL || 'info';
 logger.cli();
@@ -37,8 +37,7 @@ Yargs
         default: 'latest',
         describe: 'Image tag that should be released',
       });
-    }, wrap(deploy),
-  )
+  }, wrap(deploy))
   .command('rollback', 'Roll back service(s)', (yargs) => {
     yargs
       .group(['cluster', 'services', 'rev'], 'Common args:')
@@ -51,16 +50,42 @@ Yargs
         describe: 'Desired relative revision to release',
       });
   }, wrap(rollback))
+  .command('bump', 'Rolling restart a service across a cluster', (yargs) => {
+    yargs
+      .group(['cluster', 'services'], 'Common args:')
+      .example('$0 config -c dev', 'restart all development containers')
+      .example('$0 config -c dev -s api', 'restart development api containers');
+  }, wrap(deploy))
+  .command('config [get|set|unset]', 'View or modify service environments', (yargs) => {
+    yargs
+      .group(['cluster', 'services'], 'Common args:')
+      .example('$0 config -c dev', 'get all dev cluster env vars')
+      .command('get <key>', 'Get environment variable for a service', (subyargs) => {
+        subyargs
+          .group(['cluster', 'services'], 'Common args:')
+          .example('$0 config get DEBUG -c dev -s api', 'get development api env var DEBUG');
+      }, wrap(configure))
+      .command('set <key> <val>', 'Set environment variable for a service', (subyargs) => {
+        subyargs
+          .group(['cluster', 'services'], 'Common args:')
+          .example('$0 config set DEBUG true -c dev -s api', 'set dev api env var DEBUG to "true"');
+      }, wrap(configure))
+      .command('unset <key>', 'Unset environment variable for a service', (subyargs) => {
+        subyargs
+          .group(['cluster', 'services'], 'Common args:')
+          .example('$0 config unset DEBUG -c dev -s api', 'unset dev api env var DEBUG');
+      }, wrap(configure));
+  }, wrap(configure))
   .option('c', {
     alias: 'cluster',
     default: 'default',
-    describe: 'Cluster to modify',
+    describe: 'Cluster to target',
   })
   .option('s', {
     alias: 'services',
     type: 'array',
     default: [],
-    describe: 'Services that should be modified',
+    describe: 'Services that should be targeted',
   })
   .option('r', {
     alias: 'region',
