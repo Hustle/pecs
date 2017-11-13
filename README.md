@@ -50,8 +50,10 @@ npm install -g pecs
 pecs <command>
 
 Commands:
-  pecs release   Update service(s) with new image
-  pecs rollback  Roll back service(s)
+  pecs release                 Update service(s) with new image
+  pecs rollback                Roll back service(s)
+  pecs bump                    Rolling restart a service across a cluster
+  pecs config [get|set|unset]  View or modify service environments
 ```
 
 #### Release ####
@@ -77,7 +79,6 @@ Examples:
 ```
 
 #### Rollback ####
-
 ```
 pecs rollback
 
@@ -97,4 +98,48 @@ Examples:
   pecs rollback -c dev -s api           roll back api to previous task def
   pecs rollback -c dev -s api worker    roll back api + worker
   pecs rollback -c dev -s api --rev -2  roll back api 2 release ago
+```
+
+#### Bump ####
+```
+pecs bump
+
+Rolling restart a service across a cluster
+
+Common args:
+  -c, --cluster   Cluster to target                         [default: "default"]
+  -s, --services  Services that should be targeted         [array] [default: []]
+
+Options:
+  --help        Show help                                              [boolean]
+  --version     Show version number                                    [boolean]
+  -r, --region  Region for ECS cluster                    [default: "us-east-1"]
+
+Examples:
+  pecs config -c dev         restart all development containers
+  pecs config -c dev -s api  restart development api containers
+```
+
+#### Config ###
+```
+pecs config [get|set|unset]
+
+View or modify service environments
+
+Commands:
+  pecs config get <key>        Get environment variable for a service
+  pecs config set <key> <val>  Set environment variable for a service
+  pecs config unset <key>      Unset environment variable for a service
+
+Common args:
+  -c, --cluster   Cluster to target                         [default: "default"]
+  -s, --services  Services that should be targeted         [array] [default: []]
+
+Options:
+  --help        Show help                                              [boolean]
+  --version     Show version number                                    [boolean]
+  -r, --region  Region for ECS cluster                    [default: "us-east-1"]
+
+Examples:
+  pecs config -c dev  get all dev cluster env vars
 ```
