@@ -1,7 +1,13 @@
 #!/usr/bin/env node
 const Yargs = require('yargs');
 const logger = require('winston');
-const { deploy, rollback, configure } = require('./actions');
+const {
+  clusters,
+  services,
+  deploy,
+  rollback,
+  configure,
+} = require('./actions');
 
 logger.level = process.env.LOG_LEVEL || 'info';
 logger.cli();
@@ -26,6 +32,17 @@ Yargs
   .usage('$0 <command>')
   .required(1, 'Pecs requires a command!')
   .pkgConf('ecs')
+  .command('clusters', 'Get list of clusters', (yargs) => {
+    yargs
+      .example('$0 clusters', 'get all ecs clusters in the default region')
+      .example('$0 clusters -r us-west-1', 'get all ecs clusters in the us-west-1 region');
+  }, wrap(clusters))
+  .command('services', 'Get list of services in a cluster', (yargs) => {
+    yargs
+      .group(['cluster'], 'Common args:')
+      .example('$0 services', 'get all ecs clusters in the default region')
+      .example('$0 services -c dev', 'get all services for dev cluster');
+  }, wrap(services))
   .command('release', 'Update service(s) with new image', (yargs) => {
     yargs
       .group(['cluster', 'services', 'tag'], 'Common args:')

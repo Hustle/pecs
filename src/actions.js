@@ -88,6 +88,26 @@ async function updateServices(ecs, cluster, services, arns) {
   logger.info('successfully updated the services');
 }
 
+// Gets list of clusters (scoped to region)
+async function listClusters(args) {
+  const { region } = args;
+  const ecs = getECS(region);
+  const result = await ecs.listClusters().promise();
+  const clusterNames = result.clusterArns.map(c => c.split('/')[1]);
+  // eslint-disable-next-line no-console
+  console.log(prettyjson.render(clusterNames));
+}
+
+// Gets list of services for ECS cluster (scoped to cluster)
+async function listServices(args) {
+  const { region, cluster } = args;
+  const ecs = getECS(region);
+  const result = await ecs.listServices({ cluster }).promise();
+  const serviceNames = result.serviceArns.map(s => s.split('/')[1]);
+  // eslint-disable-next-line no-console
+  console.log(prettyjson.render(serviceNames));
+}
+
 // Deploys a service or set of services by running a new image
 async function deploy(args) {
   const {
@@ -236,6 +256,8 @@ async function configure(args) {
 }
 
 module.exports = {
+  clusters: listClusters,
+  services: listServices,
   deploy,
   rollback,
   configure,
