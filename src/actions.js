@@ -4,12 +4,24 @@ const logger = require('winston');
 const prettyjson = require('prettyjson');
 
 const TAG_SEP = ':';
+const PATH_SEP = '/';
+const WRITABLE_TASK_DEF_PARAMS = [
+  'containerDefinitions',
+  'volumes',
+  'family',
+];
+
+// ECS rosource ARN format:
+// arn:aws:ecs:<region>:<account>:<resource_type>/<resource_name>
+function extractNameFromARN(arn) {
+  return arn.split(PATH_SEP)[1];
+}
 
 // Fetches list of all service names if none are provided
 async function getServices(ecs, cluster, services) {
   if (!services.length) {
     const list = await ecs.listServices({ cluster, maxResults: 10 }).promise();
-    const serviceNames = list.serviceArns.map(s => s.split('/')[1]);
+    const serviceNames = list.serviceArns.map(extractNameFromARN);
     services.push(...serviceNames);
   }
   return services;
@@ -34,11 +46,7 @@ function getECS(region) {
 // Updates task definition to specify image with provided tag
 function makeUpdatedDef(def, imageTag, env) {
   // Keep only the important bits -- the api complains if we don't
-  const newDef = _.pick(def.taskDefinition, [
-    'containerDefinitions',
-    'volumes',
-    'family',
-  ]);
+  const newDef = _.pick(def.taskDefinition, WRITABLE_TASK_DEF_PARAMS);
 
   if (imageTag) {
     // Only support one container per def for now
@@ -93,7 +101,7 @@ async function listClusters(args) {
   const { region } = args;
   const ecs = getECS(region);
   const result = await ecs.listClusters().promise();
-  const clusterNames = result.clusterArns.map(c => c.split('/')[1]);
+  const clusterNames = result.clusterArns.map(extractNameFromARN);
   // eslint-disable-next-line no-console
   console.log(prettyjson.render(clusterNames));
 }
@@ -103,7 +111,7 @@ async function listServices(args) {
   const { region, cluster } = args;
   const ecs = getECS(region);
   const result = await ecs.listServices({ cluster }).promise();
-  const serviceNames = result.serviceArns.map(s => s.split('/')[1]);
+  const serviceNames = result.serviceArns.map(extractNameFromARN);
   // eslint-disable-next-line no-console
   console.log(prettyjson.render(serviceNames));
 }
