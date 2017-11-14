@@ -20,13 +20,6 @@ function wrap(fn) {
   };
 }
 
-/**
- * Updates services on ECS to use a new docker image.
- *
- * If multiple services in a cluster depend on the same image, this tool
- * can be used to update all of them simultaneously.
- */
-
 // eslint-disable-next-line no-unused-expressions
 Yargs
   .usage('$0 <command>')
