@@ -24,6 +24,7 @@ function wrap(fn) {
 Yargs
   .usage('$0 <command>')
   .required(1, 'Pecs requires a command!')
+  .epilog('This dope tool is brought to you by Hustle, Inc.')
   .pkgConf('ecs')
   .command('clusters', 'Get list of clusters', (yargs) => {
     yargs

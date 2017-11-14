@@ -50,6 +50,8 @@ npm install -g pecs
 pecs <command>
 
 Commands:
+  pecs clusters                Get list of clusters
+  pecs services                Get list of services in a cluster
   pecs release                 Update service(s) with new image
   pecs rollback                Roll back service(s)
   pecs bump                    Rolling restart a service across a cluster
