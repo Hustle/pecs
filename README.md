@@ -46,7 +46,7 @@ npm install -g pecs
 
 ### Usage ###
 
-```sh
+```
 pecs <command>
 
 Commands:
