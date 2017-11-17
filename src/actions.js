@@ -198,6 +198,63 @@ async function rollback(args) {
   return updateServices(ecs, cluster, services, previousDefArns);
 }
 
+async function configGet(ecs, cluster, services, args, taskDefs) {
+  const { key } = args;
+  logger.info(`fetching ${key}`, { cluster, services });
+  const env = taskDefs[0].taskDefinition.containerDefinitions[0].environment;
+  const envVar = env.find(x => x.name === key);
+  if (envVar) {
+    // eslint-disable-next-line no-console
+    console.log(envVar.value);
+  }
+}
+
+async function configSet(ecs, cluster, services, args, taskDefs) {
+  const { key, val } = args;
+  logger.info(`setting ${key}=${val}`, { cluster, services });
+  const newTaskDefs = taskDefs.map((def) => {
+    const env = def.taskDefinition.containerDefinitions[0].environment;
+    env.push({ name: key, value: val });
+    return makeUpdatedDef(def, null, env);
+  });
+  const registeredDefs = await registerDefs(ecs, newTaskDefs);
+
+  const newArns = registeredDefs.map(def => def.taskDefinition.taskDefinitionArn);
+  await updateServices(ecs, cluster, services, newArns);
+}
+
+async function configUnset(ecs, cluster, services, args, taskDefs) {
+  const { key } = args;
+  logger.info(`unsetting ${key}`, { cluster, services });
+
+  const newTaskDefs = taskDefs.map((def) => {
+    const oldEnv = def.taskDefinition.containerDefinitions[0].environment;
+    const newEnv = oldEnv.filter(envVar => envVar.name !== key);
+    return makeUpdatedDef(def, null, newEnv);
+  });
+  const registeredDefs = await registerDefs(ecs, newTaskDefs);
+
+  const newArns = registeredDefs.map(def => def.taskDefinition.taskDefinitionArn);
+  await updateServices(ecs, cluster, services, newArns);
+}
+
+async function configSubcommand(ecs, cluster, services, args, taskDefs) {
+  const subCommand = args._[1];
+  switch (subCommand) {
+    case 'get':
+      configGet(ecs, cluster, services, args, taskDefs);
+      break;
+    case 'set':
+      configSet(ecs, cluster, services, args, taskDefs);
+      break;
+    case 'unset':
+      configUnset(ecs, cluster, services, args, taskDefs);
+      break;
+    default:
+      throw new Error(`Invalid config subcommand ${subCommand}!`);
+  }
+}
+
 async function configure(args) {
   const {
     region,
@@ -234,44 +291,7 @@ async function configure(args) {
       console.log(prettyjson.render(defEnv.env), '\n');
     });
   } else if (numArgs > 1) {
-    const subCommand = args._[1];
-    if (subCommand === 'get') {
-      const { key } = args;
-      logger.info(`fetching ${key}`, { cluster, services });
-      const env = taskDefs[0].taskDefinition.containerDefinitions[0].environment;
-      const envVar = env.find(x => x.name === key);
-      if (envVar) {
-        // eslint-disable-next-line no-console
-        console.log(envVar.value);
-      }
-    }
-    if (subCommand === 'set') {
-      const { key, val } = args;
-      logger.info(`setting ${key}=${val}`, { cluster, services });
-      const newTaskDefs = taskDefs.map((def) => {
-        const env = def.taskDefinition.containerDefinitions[0].environment;
-        env.push({ name: key, value: val });
-        return makeUpdatedDef(def, null, env);
-      });
-      const registeredDefs = await registerDefs(ecs, newTaskDefs);
-
-      const newArns = registeredDefs.map(def => def.taskDefinition.taskDefinitionArn);
-      await updateServices(ecs, cluster, services, newArns);
-    }
-    if (subCommand === 'unset') {
-      const { key } = args;
-      logger.info(`unsetting ${key}`, { cluster, services });
-
-      const newTaskDefs = taskDefs.map((def) => {
-        const oldEnv = def.taskDefinition.containerDefinitions[0].environment;
-        const newEnv = oldEnv.filter(envVar => envVar.name !== key);
-        return makeUpdatedDef(def, null, newEnv);
-      });
-      const registeredDefs = await registerDefs(ecs, newTaskDefs);
-
-      const newArns = registeredDefs.map(def => def.taskDefinition.taskDefinitionArn);
-      await updateServices(ecs, cluster, services, newArns);
-    }
+    configSubcommand(ecs, cluster, services, args, taskDefs);
   }
 }
 
