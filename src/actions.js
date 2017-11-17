@@ -115,6 +115,8 @@ async function listServices(args) {
   console.log(prettyjson.render(serviceNames));
 }
 
+// Updates all ECS agents in a cluster
+// TODO: listContainerInstances can take a filter param to scope this to a single instance
 async function updateAgents(args) {
   const { region, cluster } = args;
   const ecs = getECS(region);
