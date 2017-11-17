@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+
+require('babel-core/register');
+require('babel-polyfill');
+
 const Yargs = require('yargs');
 const logger = require('winston');
 const {

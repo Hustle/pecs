@@ -2,10 +2,13 @@
   "name": "pecs",
   "version": "1.3.0",
   "description": "Flex your ECS muscles",
-  "main": "src/pecs.js",
+  "main": "lib/pecs.js",
   "scripts": {
     "lint": "eslint .",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepublish": "npm run build",
+    "dev": "babel src -d lib -w",
+    "build": "babel src -d lib"
   },
   "bin": {
     "pecs": "src/pecs.js"
@@ -28,12 +31,16 @@
   "homepage": "https://github.com/HustleInc/pecs#readme",
   "dependencies": {
     "aws-sdk": "^2.149.0",
+    "babel-core": "^6.26.0",
+    "babel-polyfill": "^6.26.0",
     "lodash": "^4.17.4",
     "prettyjson": "^1.2.1",
     "winston": "^2.4.0",
     "yargs": "^10.0.3"
   },
   "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-preset-env": "^1.6.1",
     "eslint": "^4.11.0",
     "eslint-config-airbnb": "^16.1.0",
     "eslint-plugin-import": "^2.8.0",
@@ -41,6 +48,6 @@
     "eslint-plugin-react": "^7.4.0"
   },
   "engines": {
-    "node": ">=8.0.0 <9.0.0"
+    "node": ">=4.0.0"
   }
 }

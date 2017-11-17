@@ -3,7 +3,6 @@ PECS: Flex your ECS muscles
 
 PECS allows you to easily deploy your docker projects to AWS's ECS platform.
 
-
 ### Rationale
 
 **Q:** Why would we build another ECS deploy tool when many already exist?
@@ -14,7 +13,7 @@ ECS users often have multiple services that share some code and use
 the same image but be run with different commands or entrypoints.
 
 For example, a single image could be used for an api service and a worker service.
- 
+
  - When you update that image, it would be nice to update multiple services
 along with it.
  - Likewise, when you roll back a release, it's nice to be able
@@ -36,7 +35,7 @@ Currently requires that AWS is configured via the environment:
   - `AWS_ACCESS_KEY_ID` must be set
   - `AWS_SECRET_ACCESS_KEY` must be set
 
-Requires Node 8+
+Requires Node 4+
 
 ### Installation ###
 
@@ -65,16 +64,6 @@ pecs release
 
 Update service(s) with new image
 
-Common args:
-  -c, --cluster   Cluster to modify                         [default: "default"]
-  -s, --services  Services that should be modified         [array] [default: []]
-  -t, --tag       Image tag that should be released          [default: "latest"]
-
-Options:
-  --help        Show help                                              [boolean]
-  --version     Show version number                                    [boolean]
-  -r, --region  Region for ECS cluster                    [default: "us-east-1"]
-
 Examples:
   pecs release -c dev -s api            update dev api service
   pecs release -c dev -s api worker     update dev api + worker services
@@ -86,16 +75,6 @@ Examples:
 pecs rollback
 
 Roll back service(s)
-
-Common args:
-  -c, --cluster   Cluster to modify                         [default: "default"]
-  -s, --services  Services that should be modified         [array] [default: []]
-  --rev           Desired relative revision to release  [number] [default: "-1"]
-
-Options:
-  --help        Show help                                              [boolean]
-  --version     Show version number                                    [boolean]
-  -r, --region  Region for ECS cluster                    [default: "us-east-1"]
 
 Examples:
   pecs rollback -c dev -s api           roll back api to previous task def
@@ -109,21 +88,12 @@ pecs bump
 
 Rolling restart a service across a cluster
 
-Common args:
-  -c, --cluster   Cluster to target                         [default: "default"]
-  -s, --services  Services that should be targeted         [array] [default: []]
-
-Options:
-  --help        Show help                                              [boolean]
-  --version     Show version number                                    [boolean]
-  -r, --region  Region for ECS cluster                    [default: "us-east-1"]
-
 Examples:
   pecs config -c dev         restart all development containers
   pecs config -c dev -s api  restart development api containers
 ```
 
-#### Config ###
+#### Config ####
 ```
 pecs config [get|set|unset]
 
@@ -134,15 +104,36 @@ Commands:
   pecs config set <key> <val>  Set environment variable for a service
   pecs config unset <key>      Unset environment variable for a service
 
-Common args:
-  -c, --cluster   Cluster to target                         [default: "default"]
-  -s, --services  Services that should be targeted         [array] [default: []]
-
-Options:
-  --help        Show help                                              [boolean]
-  --version     Show version number                                    [boolean]
-  -r, --region  Region for ECS cluster                    [default: "us-east-1"]
-
 Examples:
   pecs config -c dev  get all dev cluster env vars
+```
+
+### Development
+
+#### Setup ####
+
+```sh
+git clone git@github.com:HustleInc/pecs.git
+```
+
+#### Run in Node 8+ ####
+
+```
+node src/pecs.js
+```
+
+#### Active Dev (Transpiled) ####
+
+```sh
+npm link
+```
+
+Run the dev mode to constantly transpile the source
+```sh
+npm run dev
+```
+
+Run pecs
+```sh
+pecs
 ```
