@@ -65,7 +65,6 @@ function makeUpdatedDef(def, imageTag, env) {
   return newDef;
 }
 
-
 // Registers an array of task definitions
 async function registerDefs(ecs, newTaskDefs) {
   const registerDefPromises = newTaskDefs.map((def) => {
@@ -114,6 +113,17 @@ async function listServices(args) {
   const serviceNames = result.serviceArns.map(extractNameFromARN);
   // eslint-disable-next-line no-console
   console.log(prettyjson.render(serviceNames));
+}
+
+async function updateAgents(args) {
+  const { region, cluster } = args;
+  const ecs = getECS(region);
+  const results = await ecs.listContainerInstances({ cluster }).promise();
+  logger.info('updating agents...');
+  const updateReqs = results.containerInstanceArns.map(arn =>
+    ecs.updateContainerAgent({ cluster, containerInstance: arn }).promise());
+  await Promise.all(updateReqs);
+  logger.info('updates requested');
 }
 
 // Deploys a service or set of services by running a new image
@@ -269,4 +279,5 @@ module.exports = {
   deploy,
   rollback,
   configure,
+  updateAgents,
 };

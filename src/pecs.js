@@ -7,6 +7,7 @@ const {
   deploy,
   rollback,
   configure,
+  updateAgents,
 } = require('./actions');
 
 logger.level = process.env.LOG_LEVEL || 'info';
@@ -37,6 +38,11 @@ Yargs
       .example('$0 services', 'get all ecs clusters in the default region')
       .example('$0 services -c dev', 'get all services for dev cluster');
   }, wrap(services))
+  .command('updateAgents', 'Update all ECS agents in a cluster', (yargs) => {
+    yargs
+      .group(['cluster'], 'Common args:')
+      .example('$0 updateAgents -c dev', 'update all ECS agents in dev cluster');
+  }, wrap(updateAgents))
   .command('release', 'Update service(s) with new image', (yargs) => {
     yargs
       .group(['cluster', 'services', 'tag'], 'Common args:')
