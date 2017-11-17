@@ -11,7 +11,7 @@ const WRITABLE_TASK_DEF_PARAMS = [
   'family',
 ];
 
-// ECS rosource ARN format:
+// ECS resource ARN format:
 // arn:aws:ecs:<region>:<account>:<resource_type>/<resource_name>
 function extractNameFromARN(arn) {
   return arn.split(PATH_SEP)[1];
