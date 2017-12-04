@@ -6,7 +6,7 @@
   "scripts": {
     "lint": "eslint .",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "prepublish": "npm run build",
+    "prepare": "npm run build",
     "dev": "babel src -d lib -w",
     "build": "babel src -d lib"
   },
