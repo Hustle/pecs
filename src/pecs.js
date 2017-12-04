@@ -21,7 +21,10 @@ logger.cli();
 // Wraps an action so that we can handle errors, etc...
 function wrap(fn) {
   return function wrapper(params) {
-    fn(params).catch((error) => { logger.error(error); });
+    fn(params).catch((error) => {
+      logger.error(error);
+      process.exit(1);
+    });
   };
 }
 
