@@ -92,7 +92,8 @@ Yargs
       .command('set <key> <val>', 'Set environment variable for a service', (subyargs) => {
         subyargs
           .group(['cluster', 'services'], 'Common args:')
-          .example('$0 config set DEBUG true -c dev -s api', 'set dev api env var DEBUG to "true"');
+          .example('$0 config set DEBUG true -c dev -s api', 'set dev api env var DEBUG to "true"')
+          .coerce('val', val => `${val}`);
       }, wrap(configure))
       .command('unset <key>', 'Unset environment variable for a service', (subyargs) => {
         subyargs
