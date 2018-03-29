@@ -198,7 +198,7 @@ async function deploy(args) {
   return updateServices(ecs, cluster, services, newArns);
 }
 
-// Rolls a services back to the previous task definitions
+// Rolls services back to the previous task definitions
 async function rollback(args) {
   const {
     region,
