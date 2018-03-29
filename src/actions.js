@@ -5,6 +5,7 @@ const prettyjson = require('prettyjson');
 
 const TAG_SEP = ':';
 const PATH_SEP = '/';
+const MONITOR_UPDATE_TIME_MS = 3 * 1000; // 3 Seconds
 const WRITABLE_TASK_DEF_PARAMS = [
   'containerDefinitions',
   'volumes',
@@ -73,6 +74,37 @@ async function registerDefs(ecs, newTaskDefs) {
   return Promise.all(registerDefPromises);
 }
 
+// Repeatedly describe services to monitor a deployment
+function monitorRollout(ecs, cluster, services, arns, tick = 0) {
+  let done = true;
+  ecs.describeServices({ cluster, services }).promise().then((description) => {
+    services.forEach((serviceName, index) => {
+      // TODO: optimize this by using a map instead of multiple finds
+      const serviceDesc = description.services.find(s => s.serviceName === serviceName);
+      const taskDefArn = arns[index];
+      const deployment = serviceDesc.deployments.find(d => d.taskDefinition === taskDefArn);
+      const { desiredCount, pendingCount, runningCount } = deployment;
+
+      // Print info about the deployment
+      logger.info({
+        tick,
+        serviceName,
+        desiredCount,
+        pendingCount,
+        runningCount,
+      });
+      if (runningCount !== desiredCount) {
+        done = false;
+      }
+    });
+
+    // If not all of the services have been rolled out, schedule another status update
+    if (!done) {
+      setTimeout(monitorRollout, MONITOR_UPDATE_TIME_MS, ecs, cluster, services, arns, tick + 1);
+    }
+  });
+}
+
 // Updates services on a cluster to run new arns
 async function updateServices(ecs, cluster, services, arns) {
   // Instruct services to use the new task definitions
@@ -89,6 +121,9 @@ async function updateServices(ecs, cluster, services, arns) {
   // Update services
   await Promise.all(updateServicePromises);
   logger.info('waiting for services to stabilize...');
+
+  // Display progress of rollout
+  monitorRollout(ecs, cluster, services, arns);
 
   // Wait for rollout
   await ecs.waitFor('servicesStable', { cluster, services }).promise();
