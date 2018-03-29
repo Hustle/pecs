@@ -157,8 +157,11 @@ async function updateAgents(args) {
   const ecs = getECS(region);
   const results = await ecs.listContainerInstances({ cluster }).promise();
   logger.info('updating agents...');
-  const updateReqs = results.containerInstanceArns.map(arn =>
-    ecs.updateContainerAgent({ cluster, containerInstance: arn }).promise());
+  const updateReqs = results.containerInstanceArns.map((arn) => {
+    return ecs.updateContainerAgent({ cluster, containerInstance: arn })
+      .promise()
+      .catch(e => e);
+  });
   await Promise.all(updateReqs);
   logger.info('updates requested');
 }
