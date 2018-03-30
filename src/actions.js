@@ -75,19 +75,22 @@ async function registerDefs(ecs, newTaskDefs) {
 }
 
 // Repeatedly describe services to monitor a deployment
-function monitorRollout(ecs, cluster, services, arns, tick = 0) {
+function checkDeploy(args) {
+  // eslint-disable-next-line object-curly-newline
+  const { ecs, cluster, services, arns, resolve } = args;
+
   let done = true;
   ecs.describeServices({ cluster, services }).promise().then((description) => {
+    const serviceMap = _.keyBy(description.services, 'serviceName');
     services.forEach((serviceName, index) => {
       // TODO: optimize this by using a map instead of multiple finds
-      const serviceDesc = description.services.find(s => s.serviceName === serviceName);
+      const serviceDesc = serviceMap[serviceName];
       const taskDefArn = arns[index];
       const deployment = serviceDesc.deployments.find(d => d.taskDefinition === taskDefArn);
       const { desiredCount, pendingCount, runningCount } = deployment;
 
       // Print info about the deployment
       logger.info({
-        tick,
         serviceName,
         desiredCount,
         pendingCount,
@@ -99,9 +102,18 @@ function monitorRollout(ecs, cluster, services, arns, tick = 0) {
     });
 
     // If not all of the services have been rolled out, schedule another status update
-    if (!done) {
-      setTimeout(monitorRollout, MONITOR_UPDATE_TIME_MS, ecs, cluster, services, arns, tick + 1);
+    if (done) {
+      resolve();
+    } else {
+      setTimeout(checkDeploy, MONITOR_UPDATE_TIME_MS, args);
     }
+  });
+}
+
+async function monitorRollout(ecs, cluster, services, arns) {
+  return new Promise((resolve) => {
+    // eslint-disable-next-line object-curly-newline
+    checkDeploy({ ecs, cluster, services, arns, resolve });
   });
 }
 
@@ -122,11 +134,13 @@ async function updateServices(ecs, cluster, services, arns) {
   await Promise.all(updateServicePromises);
   logger.info('waiting for services to stabilize...');
 
-  // Display progress of rollout
-  monitorRollout(ecs, cluster, services, arns);
+  // Wait for and display progress of rollout
+  await monitorRollout(ecs, cluster, services, arns);
 
-  // Wait for rollout
+  // Ensure sevices have stabilized
   await ecs.waitFor('servicesStable', { cluster, services }).promise();
+
+  // Done
   logger.info('successfully updated the services');
 }
 
