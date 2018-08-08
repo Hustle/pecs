@@ -21,7 +21,7 @@ function extractNameFromARN(arn) {
 // Fetches list of all service names if none are provided
 async function getServices(ecs, cluster, services) {
   if (!services.length) {
-    const list = await ecs.listServices({ cluster, maxResults: 10 }).promise();
+    const list = await ecs.listServices({ cluster }).promise();
     const serviceNames = list.serviceArns.map(extractNameFromARN);
     services.push(...serviceNames);
   }
