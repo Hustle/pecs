@@ -14,6 +14,11 @@ const {
   updateAgents,
 } = require('./actions');
 
+process.on('unhandledRejection', (e) => {
+  console.error(e);
+  process.exit(1);
+});
+
 logger.level = process.env.LOG_LEVEL || 'info';
 logger.cli();
 
