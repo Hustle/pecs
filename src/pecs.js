@@ -85,7 +85,7 @@ Yargs
       .example('$0 config -c dev', 'restart all development containers')
       .example('$0 config -c dev -s api', 'restart development api containers');
   }, wrap(deploy))
-  .command('config [get|set|unset]', 'View or modify service environments', (yargs) => {
+  .command('config [get|set|mset|unset]', 'View or modify service environments', (yargs) => {
     yargs
       .group(['cluster', 'services'], 'Common args:')
       .example('$0 config -c dev', 'get all dev cluster env vars')
@@ -99,6 +99,21 @@ Yargs
           .group(['cluster', 'services'], 'Common args:')
           .example('$0 config set DEBUG true -c dev -s api', 'set dev api env var DEBUG to "true"')
           .coerce('val', val => `${val}`);
+      }, wrap(configure))
+      .command('mset [keyValues..]', 'Set multiple environment variables for one or more services in the form KEY1=value1 KEY2=value2 ...', (subyargs) => {
+        subyargs
+          .group(['cluster', 'services'], 'Common args:')
+          .example('$0 config mset DEBUG=true FOO=bar -c dev -s api', 'set dev api env var DEBUG to "true" and FOO to "bar"')
+          .coerce('keyValues', keyValues => {
+            const kvArr = [];
+            keyValues.forEach(kv => {
+              const kvParts = kv.split('=');
+              if (kvParts.length === 2) {
+                kvArr.push({ name: `${kvParts[0]}`, value: `${kvParts[1]}` });
+              }
+            });
+            return kvArr;
+          });
       }, wrap(configure))
       .command('unset <key>', 'Unset environment variable for a service', (subyargs) => {
         subyargs

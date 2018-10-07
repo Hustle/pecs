@@ -275,6 +275,20 @@ async function configSet(ecs, cluster, services, args, taskDefs) {
   await updateServices(ecs, cluster, services, newArns);
 }
 
+async function configMultiSet(ecs, cluster, services, args, taskDefs) {
+  const { keyValues } = args;
+  if (!Array.isArray(keyValues) || keyValues.length < 1) {
+    throw new Error('No environment variables to set!');
+  }
+  const newTaskDefs = taskDefs.map(def => {
+    const env = _.get(def, 'taskDefinition.containerDefinitions[0].environment');
+    return makeUpdatedDef(def, null, env.concat(keyValues));
+  });
+  const registeredDefs = await registerDefs(ecs, newTaskDefs);
+  const newArns = registeredDefs.map(def => def.taskDefinition.taskDefinitionArn);
+  await updateServices(ecs, cluster, services, newArns);
+}
+
 async function configUnset(ecs, cluster, services, args, taskDefs) {
   const { key } = args;
   logger.info(`unsetting ${key}`, { cluster, services });
@@ -298,6 +312,9 @@ async function configSubcommand(ecs, cluster, services, args, taskDefs) {
       break;
     case 'set':
       configSet(ecs, cluster, services, args, taskDefs);
+      break;
+    case 'mset':
+      configMultiSet(ecs, cluster, services, args, taskDefs);
       break;
     case 'unset':
       configUnset(ecs, cluster, services, args, taskDefs);
