@@ -280,7 +280,7 @@ async function configMultiSet(ecs, cluster, services, args, taskDefs) {
   if (!Array.isArray(keyValues) || keyValues.length < 1) {
     throw new Error('No environment variables to set!');
   }
-  const newTaskDefs = taskDefs.map(def => {
+  const newTaskDefs = taskDefs.map((def) => {
     const env = _.get(def, 'taskDefinition.containerDefinitions[0].environment');
     return makeUpdatedDef(def, null, env.concat(keyValues));
   });

@@ -104,9 +104,9 @@ Yargs
         subyargs
           .group(['cluster', 'services'], 'Common args:')
           .example('$0 config mset DEBUG=true FOO=bar -c dev -s api', 'set dev api env var DEBUG to "true" and FOO to "bar"')
-          .coerce('keyValues', keyValues => {
+          .coerce('keyValues', (keyValues) => {
             const kvArr = [];
-            keyValues.forEach(kv => {
+            keyValues.forEach((kv) => {
               const kvParts = kv.split('=');
               if (kvParts.length === 2) {
                 kvArr.push({ name: `${kvParts[0]}`, value: `${kvParts[1]}` });
