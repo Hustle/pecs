@@ -1,6 +1,7 @@
 const _ = require('lodash');
 const AWS = require('aws-sdk');
 const logger = require('winston');
+const prompt = require('prompt-base');
 const prettyjson = require('prettyjson');
 
 const TAG_SEP = ':';
@@ -187,6 +188,7 @@ async function deploy(args) {
     cluster,
     services,
     tag,
+    force,
   } = args;
 
   logger.info('requested release', { cluster, services, tag });
@@ -195,6 +197,15 @@ async function deploy(args) {
   const serviceNames = await getServices(ecs, cluster, services);
   logger.info('targeting services', services);
   const descriptions = await ecs.describeServices({ cluster, services: serviceNames }).promise();
+
+  if (!force) {
+    // prompt user for deploy
+    const answer = await prompt('Are you sure you want to continue with the deploy? [Y/n]').run();
+    if (!['Y','y','Yes','yes'].includes(answer)) {
+      logger.info('aborting deploy.');
+      return;
+    }
+  }
 
   // Get the current task definition for each service
   const getDefPromises = descriptions.services.map((service) => {

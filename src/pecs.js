@@ -65,6 +65,11 @@ Yargs
         alias: 'tag',
         default: 'latest',
         describe: 'Image tag that should be released',
+      })
+      .option('f', {
+        alias: 'force',
+        type: 'boolean',
+        description: 'Skips the deploy prompt',
       });
   }, wrap(deploy))
   .command('rollback', 'Roll back service(s)', (yargs) => {
