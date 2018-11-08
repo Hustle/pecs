@@ -69,7 +69,7 @@ Yargs
       .option('f', {
         alias: 'force',
         type: 'boolean',
-        description: 'Skips the deploy prompt',
+        description: 'Skip prompt',
       });
   }, wrap(deploy))
   .command('rollback', 'Roll back service(s)', (yargs) => {
@@ -82,6 +82,11 @@ Yargs
         type: 'number',
         default: '-1',
         describe: 'Desired relative revision to release',
+      })
+      .option('f', {
+        alias: 'force',
+        type: 'boolean',
+        description: 'Skip prompt',
       });
   }, wrap(rollback))
   .command('bump', 'Rolling restart a service across a cluster', (yargs) => {
@@ -94,6 +99,11 @@ Yargs
     yargs
       .group(['cluster', 'services'], 'Common args:')
       .example('$0 config -c dev', 'get all dev cluster env vars')
+      .option('f', {
+        alias: 'force',
+        type: 'boolean',
+        description: 'Skip prompt',
+      })
       .command('get <key>', 'Get environment variable for a service', (subyargs) => {
         subyargs
           .group(['cluster', 'services'], 'Common args:')
@@ -117,7 +127,7 @@ Yargs
                 kvArr.push({ name: `${kvParts[0]}`, value: `${kvParts[1]}` });
               }
             });
-            return kvArr;
+            return { original: keyValues, coerced: kvArr };
           });
       }, wrap(configure))
       .command('unset <key>', 'Unset environment variable for a service', (subyargs) => {

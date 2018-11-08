@@ -39,6 +39,18 @@ async function getTaskDefs(ecs, cluster, descriptions) {
   return Promise.all(getDefPromises);
 }
 
+async function showPrompt(reason, force = false) {
+  if (!force) {
+    // prompt user for deploy
+    const answer = await prompt(`Are you sure you want to continue with the ${reason}? [Y/n]`).run();
+    if (!['Y','y','Yes','yes'].includes(answer)) {
+      logger.info(`aborting ${reason}.`);
+      process.exit();
+    }
+  }
+}
+
+
 // Returns a configured ECS client
 function getECS(region) {
   AWS.config.update({ region });
@@ -198,14 +210,8 @@ async function deploy(args) {
   logger.info('targeting services', services);
   const descriptions = await ecs.describeServices({ cluster, services: serviceNames }).promise();
 
-  if (!force) {
-    // prompt user for deploy
-    const answer = await prompt('Are you sure you want to continue with the deploy? [Y/n]').run();
-    if (!['Y','y','Yes','yes'].includes(answer)) {
-      logger.info('aborting deploy.');
-      return;
-    }
-  }
+  // display prompt
+  await showPrompt('deploy', force);
 
   // Get the current task definition for each service
   const getDefPromises = descriptions.services.map((service) => {
@@ -230,6 +236,7 @@ async function rollback(args) {
     cluster,
     services,
     rev,
+    force,
   } = args;
 
   logger.info('requested rollback', { cluster, services, rev });
@@ -239,6 +246,9 @@ async function rollback(args) {
   logger.info('targeting services', services);
   const descriptions = await ecs.describeServices({ cluster, services: serviceNames }).promise();
   const taskDefs = await getTaskDefs(ecs, cluster, descriptions);
+
+  // display prompt
+  await showPrompt('rollback', force);
 
   const previousDefArns = taskDefs.map((def) => {
     const taskDef = def.taskDefinition;
@@ -273,8 +283,12 @@ async function configGet(ecs, cluster, services, args, taskDefs) {
 }
 
 async function configSet(ecs, cluster, services, args, taskDefs) {
-  const { key, val } = args;
+  const { key, val, force } = args;
   logger.info(`setting ${key}=${val}`, { cluster, services });
+
+  // display prompt
+  await showPrompt('config set', force);
+
   const newTaskDefs = taskDefs.map((def) => {
     const env = def.taskDefinition.containerDefinitions[0].environment;
     env.push({ name: key, value: val });
@@ -287,13 +301,18 @@ async function configSet(ecs, cluster, services, args, taskDefs) {
 }
 
 async function configMultiSet(ecs, cluster, services, args, taskDefs) {
-  const { keyValues } = args;
-  if (!Array.isArray(keyValues) || keyValues.length < 1) {
+  const { keyValues, force } = args;
+  if (!Array.isArray(keyValues.coerced) || keyValues.coerced.length < 1) {
     throw new Error('No environment variables to set!');
   }
+  logger.info(`setting ${keyValues.original}`, { cluster, services });
+
+  // display prompt
+  await showPrompt('config set', force);
+
   const newTaskDefs = taskDefs.map((def) => {
     const env = _.get(def, 'taskDefinition.containerDefinitions[0].environment');
-    return makeUpdatedDef(def, null, env.concat(keyValues));
+    return makeUpdatedDef(def, null, env.concat(keyValues.coerced));
   });
   const registeredDefs = await registerDefs(ecs, newTaskDefs);
   const newArns = registeredDefs.map(def => def.taskDefinition.taskDefinitionArn);
@@ -301,8 +320,11 @@ async function configMultiSet(ecs, cluster, services, args, taskDefs) {
 }
 
 async function configUnset(ecs, cluster, services, args, taskDefs) {
-  const { key } = args;
+  const { key, force } = args;
   logger.info(`unsetting ${key}`, { cluster, services });
+
+  // display prompt
+  await showPrompt('config unset', force);
 
   const newTaskDefs = taskDefs.map((def) => {
     const oldEnv = def.taskDefinition.containerDefinitions[0].environment;
