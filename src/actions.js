@@ -9,8 +9,9 @@ const PATH_SEP = '/';
 const MONITOR_UPDATE_TIME_MS = 3 * 1000; // 3 Seconds
 const WRITABLE_TASK_DEF_PARAMS = [
   'containerDefinitions',
-  'volumes',
   'family',
+  'placementConstraints',
+  'volumes',
 ];
 
 // ECS resource ARN format:
