@@ -12,6 +12,7 @@ const WRITABLE_TASK_DEF_PARAMS = [
   'family',
   'placementConstraints',
   'volumes',
+  'taskRoleArn',
 ];
 
 // ECS resource ARN format:
