@@ -24,6 +24,7 @@ function extractNameFromARN(arn) {
 // Fetches list of all service names if none are provided
 async function getServices(ecs, cluster, services) {
   if (!services.length) {
+    // TODO: use listServices call here to reduce code duplication
     const list = await ecs.listServices({ cluster }).promise();
     const serviceNames = list.serviceArns.map(extractNameFromARN);
     services.push(...serviceNames);
@@ -163,8 +164,16 @@ async function updateServices(ecs, cluster, services, arns) {
 async function listClusters(args) {
   const { region } = args;
   const ecs = getECS(region);
-  const result = await ecs.listClusters().promise();
-  const clusterNames = result.clusterArns.map(extractNameFromARN);
+  const clusterNames = []
+  const nextToken = null;
+
+// TODO: extract this pattern into a helper function
+  do {
+    const result = await ecs.listClusters({ cluster, nextToken }).promise();
+    clusterNames.push(...result.clusterArns.map(extractNameFromARN))
+    nextToken = result.nextToken;
+  } while (nextToken)
+
   // eslint-disable-next-line no-console
   console.log(prettyjson.render(clusterNames));
 }
@@ -173,8 +182,16 @@ async function listClusters(args) {
 async function listServices(args) {
   const { region, cluster } = args;
   const ecs = getECS(region);
-  const result = await ecs.listServices({ cluster }).promise();
-  const serviceNames = result.serviceArns.map(extractNameFromARN);
+  const serviceNames = [];
+  let nextToken = null;
+
+// TODO: extract this pattern into a helper function
+  do {
+    const result = await ecs.listServices({ cluster, nextToken }).promise();
+    serviceNames.push(...result.serviceArns.map(extractNameFromARN))
+    nextToken = result.nextToken;
+  } while (nextToken)
+
   // eslint-disable-next-line no-console
   console.log(prettyjson.render(serviceNames));
 }
