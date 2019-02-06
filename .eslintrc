@@ -2,5 +2,7 @@
     "extends": "airbnb",
     "rules": {
       "arrow-body-style": 0,
+      "no-await-in-loop": 0,
+      "prefer-destructuring": 0,
     }
 }
