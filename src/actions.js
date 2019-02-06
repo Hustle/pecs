@@ -46,7 +46,7 @@ async function showPrompt(reason, force = false) {
   if (!force) {
     // prompt user for deploy
     const answer = await prompt(`Are you sure you want to continue with the ${reason}? [Y/n]`).run();
-    if (!['Y','y','Yes','yes'].includes(answer)) {
+    if (!['Y', 'y', 'Yes', 'yes'].includes(answer)) {
       logger.info(`aborting ${reason}.`);
       process.exit();
     }
@@ -164,15 +164,15 @@ async function updateServices(ecs, cluster, services, arns) {
 async function listClusters(args) {
   const { region } = args;
   const ecs = getECS(region);
-  const clusterNames = []
+  const clusterNames = [];
   const nextToken = null;
 
-// TODO: extract this pattern into a helper function
+  // TODO: extract this pattern into a helper function
   do {
     const result = await ecs.listClusters({ cluster, nextToken }).promise();
-    clusterNames.push(...result.clusterArns.map(extractNameFromARN))
+    clusterNames.push(...result.clusterArns.map(extractNameFromARN));
     nextToken = result.nextToken;
-  } while (nextToken)
+  } while (nextToken);
 
   // eslint-disable-next-line no-console
   console.log(prettyjson.render(clusterNames));
@@ -185,12 +185,12 @@ async function listServices(args) {
   const serviceNames = [];
   let nextToken = null;
 
-// TODO: extract this pattern into a helper function
+  // TODO: extract this pattern into a helper function
   do {
     const result = await ecs.listServices({ cluster, nextToken }).promise();
-    serviceNames.push(...result.serviceArns.map(extractNameFromARN))
+    serviceNames.push(...result.serviceArns.map(extractNameFromARN));
     nextToken = result.nextToken;
-  } while (nextToken)
+  } while (nextToken);
 
   // eslint-disable-next-line no-console
   console.log(prettyjson.render(serviceNames));
