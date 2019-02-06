@@ -49,13 +49,13 @@ npm install -g pecs
 pecs <command>
 
 Commands:
-  pecs clusters                Get list of clusters
-  pecs services                Get list of services in a cluster
-  pecs updateAgents            Update all ECS agents in a cluster
-  pecs release                 Update service(s) with new image
-  pecs rollback                Roll back service(s)
-  pecs bump                    Rolling restart a service across a cluster
-  pecs config [get|set|unset]  View or modify service environments
+  pecs clusters                     Get list of clusters
+  pecs services                     Get list of services in a cluster
+  pecs updateAgents                 Update all ECS agents in a cluster
+  pecs release                      Update service(s) with new image
+  pecs rollback                     Roll back service(s)
+  pecs bump                         Rolling restart a service across a cluster
+  pecs config [get|set|mset|unset]  View or modify service environments
 ```
 
 #### Release ####
@@ -100,9 +100,10 @@ pecs config [get|set|unset]
 View or modify service environments
 
 Commands:
-  pecs config get <key>        Get environment variable for a service
-  pecs config set <key> <val>  Set environment variable for a service
-  pecs config unset <key>      Unset environment variable for a service
+  pecs config get <key>                         Get environment variable for a service
+  pecs config set <key> <val>                   Set environment variable for a service
+  pecs config mset <key1>=<val1> <key2>=<val2>  Set multiple environment variables for a service
+  pecs config unset <key>                       Unset environment variable for a service
 
 Examples:
   pecs config -c dev  get all dev cluster env vars
