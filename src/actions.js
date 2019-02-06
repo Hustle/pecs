@@ -169,7 +169,7 @@ async function listClusters(args) {
 
   // TODO: extract this pattern into a helper function
   do {
-    const result = await ecs.listClusters({ cluster, nextToken }).promise();
+    const result = await ecs.listClusters({ nextToken }).promise();
     clusterNames.push(...result.clusterArns.map(extractNameFromARN));
     nextToken = result.nextToken;
   } while (nextToken);
