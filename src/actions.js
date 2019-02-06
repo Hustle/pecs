@@ -45,7 +45,7 @@ async function getTaskDefs(ecs, cluster, descriptions) {
 async function showPrompt(reason, force = false) {
   if (!force) {
     // prompt user for deploy
-    const answer = await prompt(`Are you sure you want to continue with the ${reason}? [Y/n]`).run();
+    const answer = await prompt(`Are you sure you want to continue with the ${reason}? [y/N]`).run();
     if (!['Y', 'y', 'Yes', 'yes'].includes(answer)) {
       logger.info(`aborting ${reason}.`);
       process.exit();
