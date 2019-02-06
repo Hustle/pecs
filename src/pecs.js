@@ -15,7 +15,7 @@ const {
 } = require('./actions');
 
 process.on('unhandledRejection', (e) => {
-  console.error(e);
+  console.error(e); // eslint-disable-line no-console
   process.exit(1);
 });
 
