@@ -165,7 +165,7 @@ async function listClusters(args) {
   const { region } = args;
   const ecs = getECS(region);
   const clusterNames = [];
-  const nextToken = null;
+  let nextToken = null;
 
   // TODO: extract this pattern into a helper function
   do {
