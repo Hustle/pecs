@@ -1,6 +1,6 @@
 {
   "name": "pecs",
-  "version": "1.6.0",
+  "version": "1.6.2",
   "description": "Flex your ECS muscles",
   "main": "lib/pecs.js",
   "scripts": {
