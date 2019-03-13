@@ -114,7 +114,7 @@ Examples:
 #### Setup ####
 
 ```sh
-git clone git@github.com:HustleInc/pecs.git
+git clone git@github.com:Hustle/pecs.git
 ```
 
 #### Run in Node 8+ ####
