@@ -15,7 +15,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/HustleInc/pecs.git"
+    "url": "git+https://github.com/Hustle/pecs.git"
   },
   "keywords": [
     "AWS",
@@ -26,9 +26,9 @@
   "author": "Tyler Brock, Noah Silas",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/HustleInc/pecs/issues"
+    "url": "https://github.com/Hustle/pecs/issues"
   },
-  "homepage": "https://github.com/HustleInc/pecs#readme",
+  "homepage": "https://github.com/Hustle/pecs#readme",
   "dependencies": {
     "aws-sdk": "^2.149.0",
     "babel-core": "^6.26.0",
