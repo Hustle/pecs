@@ -58,7 +58,7 @@ Commands:
   pecs config [get|set|mset|unset]  View or modify service environments
 ```
 
-In many cases the options `--cluster` (`-c`) and `--service` (`-s`) are required.
+In many cases the options `--cluster` (`-c`) and `--services` (`-s`) are required.
 
 #### Release ####
 ```
