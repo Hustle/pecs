@@ -46,7 +46,7 @@ npm install -g pecs
 ### Usage ###
 
 ```
-pecs <command>
+pecs <command> [arguments] [options]
 
 Commands:
   pecs clusters                     Get list of clusters
@@ -57,6 +57,8 @@ Commands:
   pecs bump                         Rolling restart a service across a cluster
   pecs config [get|set|mset|unset]  View or modify service environments
 ```
+
+In many cases the options `--cluster` (`-c`) and `--service` (`-s`) are required.
 
 #### Release ####
 ```
@@ -89,8 +91,8 @@ pecs bump
 Rolling restart a service across a cluster
 
 Examples:
-  pecs config -c dev         restart all development containers
-  pecs config -c dev -s api  restart development api containers
+  pecs bump -c dev         restart all development containers
+  pecs bump -c dev -s api  restart development api containers
 ```
 
 #### Config ####
@@ -106,7 +108,9 @@ Commands:
   pecs config unset <key>                       Unset environment variable for a service
 
 Examples:
-  pecs config -c dev  get all dev cluster env vars
+  pecs config -c dev                    get all dev cluster env vars
+
+  pecs config get DEBUG -c dev -s api   get development api env var DEBUG 
 ```
 
 ### Development
