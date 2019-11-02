@@ -13,6 +13,7 @@ const WRITABLE_TASK_DEF_PARAMS = [
   'placementConstraints',
   'volumes',
   'taskRoleArn',
+  'secrets',
   'executionRoleArn',
 ];
 
